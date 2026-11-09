@@ -13,18 +13,31 @@ Not affiliated with Deutsche Bahn.
 
 Shows delays (`+5`), platform changes (⚠️) and cancellations.
 
-## Departure-board widget
+## Widgets (Telegram Bot API 10.4)
 
-`/board <station>` sends an interactive HTML widget (Telegram Bot API 10.4):
-DB-style card with colour-coded line badges, delay chips (yellow → red by
-severity), platform chips, ⚠️-style highlighting of platform changes,
-cancelled trains, light/dark mode, and a **Refresh** button that asks the bot
-for fresh data without sending a new message.
+Both widgets are DB-styled HTML cards with light/dark mode, and work **only in
+private chats** (a Telegram limit for now; they can't be forwarded). If widgets
+aren't available, the bot falls back to plain text.
 
-- Widgets currently work **only in private chats** with the bot, and can't be
-  forwarded.
-- If the widget can't be sent, the bot falls back to the plain-text board.
-- Widget data is limited to 1 KB, so the board shows as many rows as fit.
+### `/trip <from> > <to> [at 18:30]` – interactive journey tracker
+
+- **Hero:** live countdown to departure (then to arrival), departure/arrival
+  time, delay chip, platform, and the current leg or the next change.
+- **Progress bar:** one segment per leg (walk, bus, train) that fills in as you travel.
+- **Alternatives strip:** tap another connection to switch to it instantly.
+- **Timeline:** every stop, change, platform, delay and cancellation.
+- **Buttons:** **Refresh** (live data), **Later ›** (next connections),
+  **⇄** (swap direction).
+- **From your location:** send the bot a 📍 location, then `/trip > Köln Hbf`
+  for door-to-door directions including walking and buses.
+
+### `/board <station>` – live departure board
+
+Colour-coded line badges, delay chips, platform changes, cancelled trains and a
+**Refresh** button that updates in place.
+
+Widget data is limited to 1 KB by Telegram, so a widget carries as many
+connections as fit.
 
 ## Run it
 

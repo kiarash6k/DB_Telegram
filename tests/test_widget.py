@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -9,9 +9,19 @@ from telegram.error import BadRequest
 
 from db_bot import bot
 from db_bot.api import BERLIN, DbApi, Departure
-from db_bot.widget import MAX_DATA_BYTES, WIDGET_HTML, WidgetStore, encode_board, html_fits
+from db_bot.api import Journey, Leg
+from db_bot.widget import (
+    MAX_DATA_BYTES,
+    TRIP_HTML,
+    WIDGET_HTML,
+    WidgetState,
+    WidgetStore,
+    encode_board,
+    encode_trip,
+    html_fits,
+)
 
-from test_bot import BASE, GEOCODE, STOPTIMES
+from test_bot import BASE, GEOCODE, PLAN, STOPTIMES
 
 NOW = datetime(2026, 11, 9, 15, 40, tzinfo=BERLIN)
 
@@ -21,7 +31,8 @@ def _dep(i):
 
 
 def test_widget_html_within_telegram_limits():
-    assert len(WIDGET_HTML.encode()) <= 32768 and html_fits()
+    for html in (WIDGET_HTML, TRIP_HTML):
+        assert len(html.encode()) <= 32768 and html_fits(html)
 
 
 def test_encode_board_fits_and_drops_rows_when_too_big():
@@ -39,8 +50,9 @@ def test_encode_board_unicode_stays_in_byte_limit():
 
 def test_store_roundtrip():
     store = WidgetStore(":memory:")
-    store.save(1, 2, "id", "Aachen Hbf")
-    assert store.get(1, 2) == ("id", "Aachen Hbf") and store.get(1, 3) is None
+    state = WidgetState("trip", "a", "A", "b", "B", "2026-11-09T10:00:00Z", "2026-11-09T11:00:00Z")
+    store.save(1, 2, state)
+    assert store.get(1, 2) == state and store.get(1, 3) is None
 
 
 class FakeBot:
@@ -78,7 +90,7 @@ async def test_board_sends_widget_and_remembers_station():
     endpoint, kw = fake.calls[0]
     assert endpoint == "sendWidget" and kw["chat_id"] == 5 and kw["allow_queries"] is True
     assert kw["html"] == WIDGET_HTML and json.loads(kw["chat_data"])["s"] == "Aachen Hbf"
-    assert ctx.application.bot_data["widgets"].get(5, 77)[1] == "Aachen Hbf"
+    assert ctx.application.bot_data["widgets"].get(5, 77) == WidgetState("board", "be-sncb_8015345", "Aachen Hbf")
 
 
 @respx.mock
@@ -107,7 +119,7 @@ async def test_refresh_query_answers_with_fresh_data_and_edits_message():
     respx.get(f"{BASE}/v5/stoptimes").mock(return_value=httpx.Response(200, json=STOPTIMES))
     fake = FakeBot()
     ctx = _ctx(DbApi(BASE), fake)
-    ctx.application.bot_data["widgets"].save(5, 77, "be-sncb_8015345", "Aachen Hbf")
+    ctx.application.bot_data["widgets"].save(5, 77, WidgetState("board", "be-sncb_8015345", "Aachen Hbf"))
     await bot.on_widget_query(_query_update(), ctx)
     (ep1, kw1), (ep2, kw2) = fake.calls
     assert ep1 == "answerWidgetQuery" and kw1["widget_query_id"] == "q1"

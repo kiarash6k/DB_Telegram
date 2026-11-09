@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -61,6 +61,16 @@ class Journey:
     legs: list[Leg]
 
 
+def clean_name(name: str) -> str:
+    """Tidy station names: "AACHEN Hauptbahnhof" -> "Aachen Hbf", "S+U Berlin Hbf" -> "Berlin Hbf"."""
+    first, _, rest = name.partition(" ")
+    if len(first) > 2 and first.isupper() and first.isalpha():
+        name = f"{first.capitalize()} {rest}".strip()
+    name = re.sub(r"^S\+U\s+", "", name)
+    name = re.sub(r"\bHauptbahnhof\b", "Hbf", name)
+    return re.sub(r"\bBahnhof\b", "Bf", name)
+
+
 def _dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value).astimezone(BERLIN) if value else None
 
@@ -97,7 +107,7 @@ class DbApi:
         stops = [s for s in data if s.get("type") == "STOP" and s.get("id")]
         # Prefer real train stations over bus stops with a similar name.
         stops.sort(key=lambda s: not (RAIL_WORDS & set(s.get("modes", []))))
-        return [Station(s["id"], s["name"]) for s in stops[:limit]]
+        return [Station(s["id"], clean_name(s["name"])) for s in stops[:limit]]
 
     async def departures(self, station_id: str, results: int = 8, **_: Any) -> list[Departure]:
         data = await self._get(
@@ -110,7 +120,7 @@ class DbApi:
             deps.append(
                 Departure(
                     line=_line(st),
-                    direction=st.get("headsign") or "?",
+                    direction=clean_name(st.get("headsign") or "?"),
                     planned=_dt(sched),
                     when=_dt(dep),
                     delay_min=_delay(dep, sched),
@@ -121,10 +131,14 @@ class DbApi:
             )
         return deps
 
-    async def journeys(self, from_id: str, to_id: str, results: int = 3) -> list[Journey]:
-        data = await self._get(
-            "/v5/plan", {"fromPlace": from_id, "toPlace": to_id, "numItineraries": results}
-        )
+    async def journeys(
+        self, from_id: str, to_id: str, results: int = 3, when: datetime | None = None
+    ) -> list[Journey]:
+        """Connections between two stop ids or "lat,lon" coordinates, optionally leaving after `when`."""
+        params: dict[str, Any] = {"fromPlace": from_id, "toPlace": to_id, "numItineraries": results}
+        if when is not None:
+            params["time"] = when.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        data = await self._get("/v5/plan", params)
         journeys = []
         for it in data.get("itineraries", []):
             legs = []
@@ -133,8 +147,8 @@ class DbApi:
                 legs.append(
                     Leg(
                         line="walk" if leg.get("mode") in WALK_MODES else _line(leg),
-                        origin=frm.get("name", "?"),
-                        destination=to.get("name", "?"),
+                        origin=clean_name(frm.get("name", "?")),
+                        destination=clean_name(to.get("name", "?")),
                         departure=_dt(frm.get("departure") or leg.get("startTime")),
                         arrival=_dt(to.get("arrival") or leg.get("endTime")),
                         departure_delay_min=_delay(frm.get("departure"), frm.get("scheduledDeparture")),
