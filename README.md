@@ -22,11 +22,26 @@ python -m db_bot
 
 ## How it works
 
-Telegram message → `db_bot/bot.py` → `db_bot/api.py` (community
-[`transport.rest`](https://transport.rest) API, no key needed) →
+Telegram message → `db_bot/bot.py` → `db_bot/api.py` →
+[Transitous](https://transitous.org) (free, open MOTIS 2 transit API, no key) →
 `db_bot/formatting.py` → reply.
-The API base URL can be changed via `DB_API_BASE_URL`. That service is free
-but has rate limits and no uptime guarantee.
+
+Transitous serves German long-distance and regional rail with live delays,
+platforms and cancellations. Time zone is Europe/Berlin.
+Data sources: <https://transitous.org/sources/>.
+
+> The old community DB endpoint (`v6.db.transport.rest`) no longer exists,
+> because DB shut down the API behind it. That is why this bot uses Transitous.
+
+Transitous' usage policy asks for an open-source, non-commercial project that
+identifies itself with a `User-Agent`. This bot does both. The base URL can be
+changed with `TRANSITOUS_BASE_URL` (or `DB_API_BASE_URL`) if you self-host MOTIS.
+
+## Troubleshooting
+
+- **"service isn't responding"**: check `curl -A "test (you@example.com)" "https://api.transitous.org/api/v1/geocode?text=Aachen&type=STOP"`.
+  If that fails, your network blocks or can't resolve `api.transitous.org`.
+- **Station not found**: use a fuller name, e.g. `Köln Hbf`.
 
 ## Tests
 

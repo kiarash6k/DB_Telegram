@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 HELP = (
     "🚆 <b>DB bot</b> (unofficial, not affiliated with Deutsche Bahn)\n\n"
     "/departures <i>station</i> – next trains, e.g. <code>/departures Aachen Hbf</code>\n"
-    "/route <i>from</i> &gt; <i>to</i> – connections, e.g. <code>/route Aachen Hbf &gt; Köln Hbf</code>"
+    "/route <i>from</i> &gt; <i>to</i> – connections, e.g. <code>/route Aachen Hbf &gt; Köln Hbf</code>\n\n"
+    '<a href="https://transitous.org/sources/">Data: Transitous</a>'
 )
 
 
@@ -89,6 +90,9 @@ def build_app(token: str, api: DbApi) -> Application:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # httpx logs full URLs, and Telegram's URL contains the bot token.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     build_app(config.get_token(), DbApi(config.get_base_url())).run_polling(
         allowed_updates=["message"]
     )
