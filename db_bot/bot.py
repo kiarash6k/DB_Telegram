@@ -89,6 +89,9 @@ def build_app(token: str, api: DbApi) -> Application:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    # httpx logs full URLs, and Telegram's URL contains the bot token.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     build_app(config.get_token(), DbApi(config.get_base_url())).run_polling(
         allowed_updates=["message"]
     )
