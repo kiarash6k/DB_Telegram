@@ -12,4 +12,4 @@ def get_token() -> str:
 
 
 def get_base_url() -> str:
-    return os.environ.get("DB_API_BASE_URL", "https://v6.db.transport.rest")
+    return os.environ.get("TRANSITOUS_BASE_URL") or os.environ.get("DB_API_BASE_URL") or "https://api.transitous.org/api"

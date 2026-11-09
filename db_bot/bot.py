@@ -16,7 +16,8 @@ log = logging.getLogger(__name__)
 HELP = (
     "🚆 <b>DB bot</b> (unofficial, not affiliated with Deutsche Bahn)\n\n"
     "/departures <i>station</i> – next trains, e.g. <code>/departures Aachen Hbf</code>\n"
-    "/route <i>from</i> &gt; <i>to</i> – connections, e.g. <code>/route Aachen Hbf &gt; Köln Hbf</code>"
+    "/route <i>from</i> &gt; <i>to</i> – connections, e.g. <code>/route Aachen Hbf &gt; Köln Hbf</code>\n\n"
+    '<a href="https://transitous.org/sources/">Data: Transitous</a>'
 )
 
 
