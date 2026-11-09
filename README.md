@@ -9,8 +9,22 @@ Not affiliated with Deutsche Bahn.
 |---|---|
 | `/departures <station>` | `/departures Aachen Hbf` |
 | `/route <from> > <to>` | `/route Aachen Hbf > Köln Hbf` |
+| `/board <station>` | `/board Köln Hbf` (widget, see below) |
 
 Shows delays (`+5`), platform changes (⚠️) and cancellations.
+
+## Departure-board widget
+
+`/board <station>` sends an interactive HTML widget (Telegram Bot API 10.4):
+DB-style card with colour-coded line badges, delay chips (yellow → red by
+severity), platform chips, ⚠️-style highlighting of platform changes,
+cancelled trains, light/dark mode, and a **Refresh** button that asks the bot
+for fresh data without sending a new message.
+
+- Widgets currently work **only in private chats** with the bot, and can't be
+  forwarded.
+- If the widget can't be sent, the bot falls back to the plain-text board.
+- Widget data is limited to 1 KB, so the board shows as many rows as fit.
 
 ## Run it
 
